@@ -20,11 +20,28 @@ class Size extends InlineListener
     public $ignore = false;
 
     /**
+     * @var boolean Emit Quill's `ql-size-<size>` class instead of an inline font-size style.
+     * @since 3.7.1-nc
+     */
+    public $useClass = false;
+
+    /**
      * {@inheritDoc}
      */
     public function process(Line $line)
     {
         if (($size = $line->getAttribute('size'))) {
+            if ($this->useClass && !$this->ignore) {
+                $class = 'ql-size-' . preg_replace('/[^a-z0-9_-]/i', '-', $size);
+                if (strpos($line->getInput(), '<') === false) {
+                    // plain text has no tag to carry the class yet
+                    $this->updateInput($line, '<span class="' . $class . '">' . $line->getInput() . '</span>');
+                } else {
+                    $line->addClassName($class);
+                }
+                return;
+            }
+
             $this->updateInput($line, $this->ignore ? $line->getInput() : '<span style="font-size:'.$line->getLexer()->escape($size).'">'.$line->getInput().'</span>');
         }
     }

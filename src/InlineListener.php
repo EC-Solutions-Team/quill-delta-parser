@@ -37,10 +37,10 @@ abstract class InlineListener extends Listener
     {
         // we override the current element, and mark as done and mark as inline
         $line->setInput($value);
-        $line->setDone();
         $line->setAsInline();
         $line->setAsEscaped();
         $this->pick($line);
+        $line->setDone();
     }
 
     /**

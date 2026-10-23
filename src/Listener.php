@@ -70,7 +70,9 @@ abstract class Listener
      */
     public function pick(Line $line, array $options = [])
     {
-        $line->setPicked();
+        if (!$line->isDone()) {
+            $line->setPicked();
+        }
         $line->debugInfo('picked by ' . static::class);
         $this->_picks[] = new Pick($this, $line, $options, count($this->_picks));
     }

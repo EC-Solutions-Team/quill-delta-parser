@@ -47,6 +47,13 @@ class Lists extends BlockListener
     public $checkListClass = 'list-unstyled';
 
     /**
+     * @var bool Render Quill 2 markup (what the editor itself produces): every list is an <ol>,
+     * and each <li> carries a data-list attribute and a leading ql-ui span, which the Quill CSS styles.
+     * @since 3.7.1-nc
+     */
+    public $quillMarkup = false;
+
+    /**
      * {@inheritDoc}
      */
     public function process(Line $line)
@@ -127,7 +134,7 @@ class Lists extends BlockListener
             // and https://github.com/nadar/quill-delta-parser/issues/30
             if (!$isOpen) {
                 $output .= '<'.$this->getListAttribute($pick);
-                if ($isCheck) {
+                if ($isCheck && !$this->quillMarkup) {
                     $output .= ' class="'.$this->checkListClass.'"';
                 }
 
@@ -145,12 +152,16 @@ class Lists extends BlockListener
                 }
             });
 
-            if ($isEmpty) {
-                $output .= '<li></li>';
-            } else {
-                $output .= '<li>';
+            $liOpen = $this->quillMarkup
+                ? '<li data-list="'.$this->getPickType($pick).'"><span class="ql-ui" contenteditable="false"></span>'
+                : '<li>';
 
-                if ($isCheck) {
+            if ($isEmpty) {
+                $output .= $this->quillMarkup ? $liOpen.'<br></li>' : '<li></li>';
+            } else {
+                $output .= $liOpen;
+
+                if ($isCheck && !$this->quillMarkup) {
                     $output .= '<input type="checkbox" disabled';
                     if ($this->getPickType($pick) === self::LIST_TYPE_CHECKED) {
                         $output .= ' checked';
@@ -199,6 +210,10 @@ class Lists extends BlockListener
     protected function getListAttribute(Pick $pick)
     {
         $type = $this->getPickType($pick);
+
+        if ($this->quillMarkup && in_array($type, [self::LIST_TYPE_ORDERED, self::LIST_TYPE_BULLET, self::LIST_TYPE_CHECKED, self::LIST_TYPE_UNCHECKED], true)) {
+            return 'ol';
+        }
 
         if ($type === self::LIST_TYPE_ORDERED) {
             return 'ol';

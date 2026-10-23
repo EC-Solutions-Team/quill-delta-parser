@@ -453,9 +453,9 @@ class Line
      *
      * @return void
      */
-    public function setAsInline()
+    public function setAsInline(bool $isInline = true)
     {
-        $this->isInline = true;
+        $this->isInline = $isInline;
     }
 
     /**
@@ -613,5 +613,39 @@ class Line
     public function getDebugInfo(): array
     {
         return $this->_debug;
+    }
+
+    /**
+     * Get class names from the HTML input string.
+     *
+     * @return string[]
+     * @since 3.7.1-nc
+     */
+    public function getClassNames()
+    {
+        if (preg_match('/class=["\']([^"\']*)["\']/', $this->input, $matches)) {
+            return array_values(array_filter(explode(' ', $matches[1])));
+        }
+
+        return [];
+    }
+
+    /**
+     * Add class names to the HTML input string.
+     *
+     * @param string|array<string> $classes
+     * @return void
+     * @since 3.7.1-nc
+     */
+    public function addClassName($classes)
+    {
+        $newClasses = is_array($classes) ? $classes : [$classes];
+        $classString = implode(' ', array_unique(array_merge($this->getClassNames(), $newClasses)));
+
+        if (preg_match('/class=["\'][^"\']*["\']/', $this->input)) {
+            $this->input = preg_replace('/class=["\'][^"\']*["\']/', 'class="' . $classString . '"', $this->input);
+        } else {
+            $this->input = preg_replace('/(<[^>]+?)>/', '$1 class="' . $classString . '">', $this->input, 1);
+        }
     }
 }

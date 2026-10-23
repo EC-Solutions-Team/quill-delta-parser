@@ -71,7 +71,10 @@ class Text extends BlockListener
                 $output[] = $pick->line->isEmpty() ? self::LINEBREAK : $pick->line->renderPrepend() . $pick->line->getInput();
 
                 // if its open and we have a next element, and the next element is not an inline, we close!
-                if ($isOpen && ($next && !$next->isInline())) {
+                // (nc) also close when this line has no end newline but the next one starts with one, so inline runs don't swallow it.
+                if ($isOpen && !$pick->line->hasEndNewline() && ($next && $next->hasEndNewline())) {
+                    $isOpen = $this->output($output, self::CLOSEP, false);
+                } elseif ($isOpen && ($next && !$next->isInline())) {
                     $isOpen = $this->output($output, self::CLOSEP, false);
 
                 // if its open and we dont have a next element, its the end of the document! lets close this damn paragraph.
@@ -81,7 +84,7 @@ class Text extends BlockListener
                 // its open, but the previous element was already an inline element, so maybe we should close and the next element
                 // will take care of the "situation". But only if this current line also had an end new line element, otherwise
                 // repeated inline elements will close
-                } elseif ($isOpen && ($prev && $prev->isInline()) && $pick->line->hasEndNewline()) {
+                } elseif ($isOpen && ($prev && $prev->isInline()) && ($pick->line->hasEndNewline() || ($next && $next->hasEndNewline()))) {
                     $isOpen = $this->output($output, self::CLOSEP, false);
 
                 // If this element is empty we should maybe directly close and reopen this paragraph as it could be an empty line with

@@ -11,6 +11,7 @@ use nadar\quill\listener\Color;
 use nadar\quill\listener\Font;
 use nadar\quill\listener\Heading;
 use nadar\quill\listener\Image;
+use nadar\quill\listener\Indent;
 use nadar\quill\listener\Italic;
 use nadar\quill\listener\Link;
 use nadar\quill\listener\Lists;
@@ -163,6 +164,7 @@ class Lexer
         $this->registerListener(new Font());
         $this->registerListener(new Script());
         $this->registerListener(new Align());
+        $this->registerListener(new Indent());
         $this->registerListener(new Size());
     }
 
@@ -174,6 +176,30 @@ class Lexer
     public function registerListener(Listener $listener)
     {
         $this->listeners[$listener->type()][$listener->priority()][get_class($listener)] = $listener;
+        return $this;
+    }
+
+    /**
+     * Render the markup the Quill editor itself produces, so the Quill CSS applies to the output:
+     * `<ol><li data-list="...">` lists and `ql-size-*` classes.
+     *
+     * @return Lexer
+     * @since 3.7.1-nc
+     */
+    public function quillMarkup(bool $enabled = true)
+    {
+        foreach ($this->listeners as $byPriority) {
+            foreach ($byPriority as $listeners) {
+                foreach ($listeners as $listener) {
+                    if ($listener instanceof Lists) {
+                        $listener->quillMarkup = $enabled;
+                    } elseif ($listener instanceof Size) {
+                        $listener->useClass = $enabled;
+                    }
+                }
+            }
+        }
+
         return $this;
     }
 
@@ -208,7 +234,7 @@ class Lexer
      */
     public function getJsonArray(): array
     {
-        return is_array($this->json) ? $this->json : self::decodeJson($this->json);
+        return is_array($this->json) ? $this->json : (self::decodeJson($this->json) ?? []);
     }
 
     /**
@@ -439,7 +465,7 @@ class Lexer
      */
     public static function decodeJson($json)
     {
-        return json_decode($json, true);
+        return json_decode((string) $json, true);
     }
 
     /**
